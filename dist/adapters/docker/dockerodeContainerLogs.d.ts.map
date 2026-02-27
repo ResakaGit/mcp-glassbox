@@ -1,0 +1,1 @@
+{"version":3,"file":"dockerodeContainerLogs.d.ts","sourceRoot":"","sources":["../../../src/adapters/docker/dockerodeContainerLogs.ts"],"names":[],"mappings":"AAAA,OAAO,MAAM,MAAM,WAAW,CAAC;AAE/B,OAAO,KAAK,EAAE,iBAAiB,EAAE,MAAM,8BAA8B,CAAC;AA6BtE,MAAM,WAAW,6BAA6B;IAC5C,MAAM,CAAC,EAAE,MAAM,CAAC;CACjB;AAED,wBAAgB,4BAA4B,CAC1C,OAAO,GAAE,6BAAkC,GAC1C,iBAAiB,CAuDnB"}
