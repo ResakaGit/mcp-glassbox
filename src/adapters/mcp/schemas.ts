@@ -66,7 +66,7 @@ export const queryTelemetrySchema = z.object({
     request_url: z.string().optional(),
     truncate_body_chars: z.number().optional().describe("Máximo caracteres en response_body (default desde config)."),
     backend_log_levels: z
-      .union(z.array(z.string()), z.literal("full"))
+      .union([z.array(z.string()), z.literal("full")])
       .optional()
       .describe("Para backend_logs: 'full' = raw; array = solo esos niveles (ej. ['WARN','ERROR'])."),
   }),
