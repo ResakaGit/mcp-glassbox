@@ -40,25 +40,27 @@ export function createSourceMapResolver(
         return null;
       }
 
-      let consumer: SourceMapConsumer;
       try {
         const map = JSON.parse(raw);
-        consumer = new SourceMapConsumer(map);
+        let resolved: SourceMapResolvedPosition | null = null;
+
+        await SourceMapConsumer.with(map, null, (consumer) => {
+          // source-map: line is 1-based, column is 0-based
+          const pos = consumer.originalPositionFor({ line, column });
+          if (pos.source == null) {
+            resolved = null;
+            return;
+          }
+          resolved = {
+            source: pos.source,
+            line: pos.line ?? line,
+            column: pos.column ?? 0,
+          };
+        });
+
+        return resolved;
       } catch {
         return null;
-      }
-
-      try {
-        // source-map: line is 1-based, column is 0-based
-        const pos = consumer.originalPositionFor({ line, column });
-        if (pos.source == null) return null;
-        return {
-          source: pos.source,
-          line: pos.line ?? line,
-          column: pos.column ?? 0,
-        };
-      } finally {
-        consumer.destroy();
       }
     },
   };

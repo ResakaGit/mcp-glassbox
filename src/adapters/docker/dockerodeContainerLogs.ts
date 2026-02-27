@@ -15,7 +15,15 @@ function isReadableStream(
 function streamToLines(stream: Readable): Promise<string[]> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    stream.on("data", (chunk: Buffer) => chunks.push(chunk));
+    stream.on("data", (chunk: unknown) => {
+      if (Buffer.isBuffer(chunk)) {
+        chunks.push(chunk);
+      } else if (typeof chunk === "string") {
+        chunks.push(Buffer.from(chunk, "utf8"));
+      } else {
+        // ignorar tipos raros; mantenemos robustez
+      }
+    });
     stream.on("end", () => {
       const buf = Buffer.concat(chunks as Buffer[]);
       const text = buf.toString("utf8");

@@ -32,7 +32,7 @@ describe("filterNetworkForSummary", () => {
     ];
     const out = filterNetworkForSummary(requests, 100);
     expect(out[0].response_body).toHaveLength(101);
-    expect(out[0].response_body).toEndWith("…");
+    expect(out[0].response_body.endsWith("…")).toBe(true);
   });
 
   it("mantiene todos los campos y no modifica url/method", () => {

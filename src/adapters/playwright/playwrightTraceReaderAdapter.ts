@@ -85,7 +85,11 @@ export function createPlaywrightTraceReaderAdapter(): TraceReaderPort {
 
       const text = traceContent.toString("utf8");
       const lines = text.split(/\r?\n/).filter(Boolean);
-      const events: Array<{ ts?: number; snapshot?: unknown }> = [];
+      const events: Array<{
+        timestamp?: number;
+        ts?: number;
+        snapshot?: unknown;
+      }> = [];
       for (const line of lines) {
         try {
           const obj = JSON.parse(line) as Record<string, unknown>;
