@@ -37,6 +37,17 @@ function parseArgs<T>(
   return { ok: false, error: toolErrorResult(zodErrorToOneLine(parsed.error)) };
 }
 
+const DESCRIPTION_DOC = "TOOL_DESCRIPTION_CONVENTION.md";
+
+function requireToolDescription(
+  name: string,
+  config: { description?: string; inputSchema: unknown }
+): void {
+  if (typeof config.description !== "string" || !config.description.trim()) {
+    throw new Error(`Tool ${name}: description is required (${DESCRIPTION_DOC}).`);
+  }
+}
+
 function wrapToolHandler<TArgs, TResult extends ToolResult>(
   handler: (args: TArgs) => TResult | Promise<TResult>
 ) {
@@ -58,12 +69,15 @@ export function registerGlassboxTools(
   ports: GlassboxPorts | GlassboxPortsV3
 ): void {
   const config = getConfig();
-
-  server.registerTool(
+  function reg(name: string, cfg: { description: string; inputSchema: unknown }, handler: (args: unknown) => Promise<ToolResult>): void {
+    requireToolDescription(name, cfg);
+    server.registerTool(name, cfg as Parameters<McpServer["registerTool"]>[1], handler);
+  }
+  reg(
     "execute_with_telemetry",
     {
       description:
-        "[Legacy] Ejecuta un comando de test y devuelve toda la telemetría en una respuesta. Parámetros: sandbox_id, entry_command (ej. 'npx playwright test auth.spec.ts'), target_containers (opcional, array). Preferir run_test_and_get_summary + query_telemetry (V3) para ahorro de tokens.",
+        "[Legacy] Runs a test command and returns full telemetry in one response. Args: sandbox_id, entry_command (e.g. 'npx playwright test auth.spec.ts'), target_containers (optional, array). Prefer run_test_and_get_summary + query_telemetry for token savings.",
       inputSchema: schemas.executeWithTelemetrySchema,
     },
     wrapToolHandler(async (args: unknown) => {
@@ -77,11 +91,11 @@ export function registerGlassboxTools(
 
   if ("runStore" in ports && ports.runStore) {
     const v3Ports = ports as GlassboxPortsV3;
-    server.registerTool(
+    reg(
       "run_test_and_get_summary",
       {
         description:
-          "Ejecuta el test y devuelve un resumen liviano: run_id, conteos, errores principales y árbol de accesibilidad. Parámetros: sandbox_id, entry_command, target_containers (opcional), source_map_base_path/truncate_body_chars/backend_log_levels (opcionales). Usar query_telemetry con el run_id devuelto para detalle bajo demanda.",
+          "Runs the test and returns a light summary: run_id, counts, main errors, accessibility tree. Args: sandbox_id, entry_command, target_containers (optional), source_map_base_path/truncate_body_chars/backend_log_levels (optional). Call query_telemetry with the returned run_id for on-demand detail.",
         inputSchema: schemas.runTestAndGetSummarySchema,
       },
       wrapToolHandler(async (args: unknown) => {
@@ -98,11 +112,11 @@ export function registerGlassboxTools(
       })
     );
 
-    server.registerTool(
+    reg(
       "query_telemetry",
       {
         description:
-          "Consulta telemetría de un run ya ejecutado. Parámetros: run_id (de run_test_and_get_summary), query (tipo: network_by_status, network_request_full, console_errors, backend_logs, full_telemetry). Respuesta bajo demanda para ahorrar tokens.",
+          "Queries telemetry for an existing run. Args: run_id (from run_test_and_get_summary), query.type (network_by_status | network_request_full | console_errors | backend_logs | full_telemetry), query.status/request_url/truncate_body_chars/backend_log_levels (optional per type). Use for on-demand detail to save tokens.",
         inputSchema: schemas.queryTelemetrySchema,
       },
       wrapToolHandler(async (args: unknown) => {
@@ -122,11 +136,11 @@ export function registerGlassboxTools(
     };
 
     if (fullPorts.savepoint) {
-      server.registerTool(
+      reg(
         "create_sandbox_savepoint",
         {
           description:
-            "Crea un savepoint del contenedor de pruebas (estado congelado) para restaurarlo después. Parámetro: savepoint_name. Requiere GLASSBOX_SAVEPOINT_CONTAINER. Útil para escenarios deterministas.",
+            "Creates a savepoint of the test container (frozen state) for later restore. Args: savepoint_name (required). Requires GLASSBOX_SAVEPOINT_CONTAINER. Use for deterministic scenarios.",
           inputSchema: schemas.createSandboxSavepointSchema,
         },
         wrapToolHandler(async (args: unknown) => {
@@ -139,11 +153,11 @@ export function registerGlassboxTools(
         })
       );
 
-      server.registerTool(
+      reg(
         "run_deterministic_scenario",
         {
           description:
-            "Ejecuta el test en modo determinista con trace; devuelve passed, run_id, trace_id. Parámetros: sandbox_id, entry_command, target_containers (opcional), restore_savepoint_after, savepoint_name (opcional, requerido si restore_savepoint_after). Opcionales: source_map_base_path, truncate_body_chars, backend_log_levels. Permite time-travel y correlación de trazas.",
+            "Runs the test in deterministic mode with trace; returns passed, run_id, trace_id. Args: sandbox_id, entry_command, target_containers (optional), restore_savepoint_after, savepoint_name (required if restore_savepoint_after). Optional: source_map_base_path, truncate_body_chars, backend_log_levels. Enables time-travel and trace correlation.",
           inputSchema: schemas.runDeterministicScenarioSchema,
         },
         wrapToolHandler(async (args: unknown) => {
@@ -161,11 +175,11 @@ export function registerGlassboxTools(
       );
     }
 
-    server.registerTool(
+    reg(
       "inspect_trace_correlation",
       {
         description:
-          "Devuelve una timeline fusionada para un run y trace: errores de consola, logs de backend (filtrados por trace_id) y network. Parámetros: run_id, trace_id. Útil para depurar fallos en tests E2E.",
+          "Returns a merged timeline for a run and trace: console errors, backend logs (filtered by trace_id), network. Args: run_id, trace_id (required). Use to debug E2E test failures.",
         inputSchema: schemas.inspectTraceCorrelationSchema,
       },
       wrapToolHandler(async (args: unknown) => {
@@ -180,11 +194,11 @@ export function registerGlassboxTools(
     );
 
     if (fullPorts.traceReader) {
-      server.registerTool(
+      reg(
         "get_dom_snapshot_at_time",
         {
           description:
-            "Obtiene el DOM textual en un instante del trace (time-travel). Parámetros: run_id (debe tener trace_path), millisecond_offset. Requiere traceReader configurado.",
+            "Returns the DOM as text at a point in the trace (time-travel). Args: run_id (must have trace_path), millisecond_offset (required). Requires traceReader.",
           inputSchema: schemas.getDomSnapshotAtTimeSchema,
         },
         wrapToolHandler(async (args: unknown) => {
