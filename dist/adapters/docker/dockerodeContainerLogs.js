@@ -8,7 +8,17 @@ function isReadableStream(out) {
 function streamToLines(stream) {
     return new Promise((resolve, reject) => {
         const chunks = [];
-        stream.on("data", (chunk) => chunks.push(chunk));
+        stream.on("data", (chunk) => {
+            if (Buffer.isBuffer(chunk)) {
+                chunks.push(chunk);
+            }
+            else if (typeof chunk === "string") {
+                chunks.push(Buffer.from(chunk, "utf8"));
+            }
+            else {
+                // ignorar tipos raros; mantenemos robustez
+            }
+        });
         stream.on("end", () => {
             const buf = Buffer.concat(chunks);
             const text = buf.toString("utf8");

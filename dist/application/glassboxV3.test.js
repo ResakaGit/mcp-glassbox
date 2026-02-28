@@ -129,7 +129,7 @@ describe("queryTelemetry", () => {
         expect(result.isError).toBeFalsy();
         const data = JSON.parse(result.content[0].text);
         expect(data.response_body).toHaveLength(101);
-        expect(data.response_body).toEndWith("…");
+        expect(data.response_body.endsWith("…")).toBe(true);
     });
     it("filtra backend_logs por backend_log_levels cuando no es 'full'", async () => {
         const runStore = createInMemoryRunStore(10);

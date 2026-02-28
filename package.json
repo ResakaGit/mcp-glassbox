@@ -1,6 +1,6 @@
 {
   "name": "mcp-glassbox",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "MCP Caja de Cristal V3: run_test_and_get_summary + query_telemetry (resumen liviano, source maps, árbol accesibilidad)",
   "type": "module",
   "engines": {

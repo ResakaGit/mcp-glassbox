@@ -1,1 +1,1 @@
-{"version":3,"file":"playwrightTraceReaderAdapter.d.ts","sourceRoot":"","sources":["../../../src/adapters/playwright/playwrightTraceReaderAdapter.ts"],"names":[],"mappings":"AAAA;;;GAGG;AAIH,OAAO,KAAK,EAAE,eAAe,EAAE,MAAM,4BAA4B,CAAC;AAmDlE;;;GAGG;AACH,wBAAgB,kCAAkC,IAAI,eAAe,CAyEpE"}
+{"version":3,"file":"playwrightTraceReaderAdapter.d.ts","sourceRoot":"","sources":["../../../src/adapters/playwright/playwrightTraceReaderAdapter.ts"],"names":[],"mappings":"AAAA;;;GAGG;AAIH,OAAO,KAAK,EAAE,eAAe,EAAE,MAAM,4BAA4B,CAAC;AAmDlE;;;GAGG;AACH,wBAAgB,kCAAkC,IAAI,eAAe,CA6EpE"}

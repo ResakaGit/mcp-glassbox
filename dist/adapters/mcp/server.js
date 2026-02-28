@@ -19,6 +19,12 @@ function parseArgs(schema, args) {
         return { ok: true, data: parsed.data };
     return { ok: false, error: toolErrorResult(zodErrorToOneLine(parsed.error)) };
 }
+const DESCRIPTION_DOC = "TOOL_DESCRIPTION_CONVENTION.md";
+function requireToolDescription(name, config) {
+    if (typeof config.description !== "string" || !config.description.trim()) {
+        throw new Error(`Tool ${name}: description is required (${DESCRIPTION_DOC}).`);
+    }
+}
 function wrapToolHandler(handler) {
     return async (args) => {
         try {
@@ -35,8 +41,12 @@ function wrapToolHandler(handler) {
  */
 export function registerGlassboxTools(server, ports) {
     const config = getConfig();
-    server.registerTool("execute_with_telemetry", {
-        description: "[Legacy] Ejecuta un comando de test y devuelve telemetría completa. Preferir run_test_and_get_summary + query_telemetry (V3) para ahorro de tokens.",
+    function reg(name, cfg, handler) {
+        requireToolDescription(name, cfg);
+        server.registerTool(name, cfg, handler);
+    }
+    reg("execute_with_telemetry", {
+        description: "[Legacy] Runs a test command and returns full telemetry in one response. Args: sandbox_id, entry_command (e.g. 'npx playwright test auth.spec.ts'), target_containers (optional, array). Prefer run_test_and_get_summary + query_telemetry for token savings.",
         inputSchema: schemas.executeWithTelemetrySchema,
     }, wrapToolHandler(async (args) => {
         const parsed = parseArgs(schemas.executeWithTelemetrySchema, args);
@@ -48,8 +58,8 @@ export function registerGlassboxTools(server, ports) {
     }));
     if ("runStore" in ports && ports.runStore) {
         const v3Ports = ports;
-        server.registerTool("run_test_and_get_summary", {
-            description: "V3: Ejecuta el test y devuelve un resumen liviano (run_id, counts, errores filtrados, árbol de accesibilidad). Usar query_telemetry con run_id para detalle bajo demanda.",
+        reg("run_test_and_get_summary", {
+            description: "Runs the test and returns a light summary: run_id, counts, main errors, accessibility tree. Args: sandbox_id, entry_command, target_containers (optional), source_map_base_path/truncate_body_chars/backend_log_levels (optional). Call query_telemetry with the returned run_id for on-demand detail.",
             inputSchema: schemas.runTestAndGetSummarySchema,
         }, wrapToolHandler(async (args) => {
             const parsed = parseArgs(schemas.runTestAndGetSummarySchema, args);
@@ -64,8 +74,8 @@ export function registerGlassboxTools(server, ports) {
                 timeoutMs: config.EXECUTE_TIMEOUT_MS,
             });
         }));
-        server.registerTool("query_telemetry", {
-            description: "V3: Consulta telemetría de un run por run_id. Tipos: network_by_status, network_request_full, console_errors, backend_logs, full_telemetry.",
+        reg("query_telemetry", {
+            description: "Queries telemetry for an existing run. Args: run_id (from run_test_and_get_summary), query.type (network_by_status | network_request_full | console_errors | backend_logs | full_telemetry), query.status/request_url/truncate_body_chars/backend_log_levels (optional per type). Use for on-demand detail to save tokens.",
             inputSchema: schemas.queryTelemetrySchema,
         }, wrapToolHandler(async (args) => {
             const parsed = parseArgs(schemas.queryTelemetrySchema, args);
@@ -79,8 +89,8 @@ export function registerGlassboxTools(server, ports) {
         }));
         const fullPorts = ports;
         if (fullPorts.savepoint) {
-            server.registerTool("create_sandbox_savepoint", {
-                description: "V3 True: Congela el estado del contenedor (savepoint) para restaurarlo después. Requiere GLASSBOX_SAVEPOINT_CONTAINER.",
+            reg("create_sandbox_savepoint", {
+                description: "Creates a savepoint of the test container (frozen state) for later restore. Args: savepoint_name (required). Requires GLASSBOX_SAVEPOINT_CONTAINER. Use for deterministic scenarios.",
                 inputSchema: schemas.createSandboxSavepointSchema,
             }, wrapToolHandler(async (args) => {
                 const parsed = parseArgs(schemas.createSandboxSavepointSchema, args);
@@ -88,8 +98,8 @@ export function registerGlassboxTools(server, ports) {
                     return parsed.error;
                 return createSavepoint({ savepoint: fullPorts.savepoint }, parsed.data.savepoint_name);
             }));
-            server.registerTool("run_deterministic_scenario", {
-                description: "V3 True: Ejecuta el test con trace_id y trace; devuelve passed, run_id, trace_id. Si restore_savepoint_after, restaura el sandbox al savepoint_name.",
+            reg("run_deterministic_scenario", {
+                description: "Runs the test in deterministic mode with trace; returns passed, run_id, trace_id. Args: sandbox_id, entry_command, target_containers (optional), restore_savepoint_after, savepoint_name (required if restore_savepoint_after). Optional: source_map_base_path, truncate_body_chars, backend_log_levels. Enables time-travel and trace correlation.",
                 inputSchema: schemas.runDeterministicScenarioSchema,
             }, wrapToolHandler(async (args) => {
                 const parsed = parseArgs(schemas.runDeterministicScenarioSchema, args);
@@ -105,8 +115,8 @@ export function registerGlassboxTools(server, ports) {
                 });
             }));
         }
-        server.registerTool("inspect_trace_correlation", {
-            description: "V3 True: Timeline fusionada para run_id y trace_id: console errors, backend logs (filtrados por trace_id), network.",
+        reg("inspect_trace_correlation", {
+            description: "Returns a merged timeline for a run and trace: console errors, backend logs (filtered by trace_id), network. Args: run_id, trace_id (required). Use to debug E2E test failures.",
             inputSchema: schemas.inspectTraceCorrelationSchema,
         }, wrapToolHandler(async (args) => {
             const parsed = parseArgs(schemas.inspectTraceCorrelationSchema, args);
@@ -115,8 +125,8 @@ export function registerGlassboxTools(server, ports) {
             return inspectTraceCorrelation({ runStore: v3Ports.runStore }, parsed.data.run_id, parsed.data.trace_id);
         }));
         if (fullPorts.traceReader) {
-            server.registerTool("get_dom_snapshot_at_time", {
-                description: "V3 True: DOM textual en un instante del trace (time-travel). run_id debe tener trace_path.",
+            reg("get_dom_snapshot_at_time", {
+                description: "Returns the DOM as text at a point in the trace (time-travel). Args: run_id (must have trace_path), millisecond_offset (required). Requires traceReader.",
                 inputSchema: schemas.getDomSnapshotAtTimeSchema,
             }, wrapToolHandler(async (args) => {
                 const parsed = parseArgs(schemas.getDomSnapshotAtTimeSchema, args);

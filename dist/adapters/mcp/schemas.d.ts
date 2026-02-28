@@ -29,7 +29,7 @@ export declare const queryTelemetrySchema: z.ZodObject<{
         status: z.ZodOptional<z.ZodNumber>;
         request_url: z.ZodOptional<z.ZodString>;
         truncate_body_chars: z.ZodOptional<z.ZodNumber>;
-        backend_log_levels: z.ZodOptional<z.ZodUnion<readonly z.core.SomeType[]>>;
+        backend_log_levels: z.ZodOptional<z.ZodUnion<readonly [z.ZodArray<z.ZodString>, z.ZodLiteral<"full">]>>;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export type QueryTelemetryInput = z.infer<typeof queryTelemetrySchema>;
