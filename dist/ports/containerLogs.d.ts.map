@@ -1,1 +1,0 @@
-{"version":3,"file":"containerLogs.d.ts","sourceRoot":"","sources":["../../src/ports/containerLogs.ts"],"names":[],"mappings":"AAAA;;;GAGG;AAEH,MAAM,WAAW,mBAAmB;IAClC,+IAA+I;IAC/I,OAAO,CAAC,EAAE,MAAM,CAAC;CAClB;AAED,MAAM,WAAW,iBAAiB;IAChC,YAAY,CACV,cAAc,EAAE,MAAM,EAAE,EACxB,gBAAgB,EAAE,MAAM,EACxB,OAAO,CAAC,EAAE,mBAAmB,GAC5B,OAAO,CAAC,MAAM,EAAE,CAAC,CAAC;CACtB"}
